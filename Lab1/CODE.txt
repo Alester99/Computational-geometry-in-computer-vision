@@ -1,0 +1,409 @@
+import numpy as np
+def group(List, n):
+    List = np.reshape(List, (n,-1)) 
+    return List
+#puzzle = '53..7....6..195....98....6.8...6...34..8.3..17...2...6.6....28....419..5....8..79'
+puzzle = '003020600900305001001806400008102900700000008006708200002609500800203009005010300'
+#puzzle = "200080300060070084030500209000105408000000000402706000301007040720040060004010003"
+puzzle = "426819573983574216517236489158342967742968135369751842274685391835197624691423750" #easy
+puzzle = '530070000600195000098000060800060003400803001700020006060000280000419005000080079'
+puzzle = '810030027062000090070000000000600100000000004008005070000000080000010750000070042' #hard
+digits = [c for c in puzzle if c in "123456789.*0"]
+grid = group(digits, 9)
+print (grid)
+
+def display(grid) -> None:
+    """Вывод Судоку """
+    width = 2
+    line = "+".join(["-" * (width * 3)] * 3)
+    for row in range(9):
+        print(
+            "".join(
+                grid[row][col].center(width) + ("|" if str(col) in "25" else "") for col in range(9)
+            )
+        )
+        if str(row) in "25":
+            print(line)
+    print()
+display(grid)
+def get_col (grid,i):
+    return np.array(grid[i,:])
+
+def get_row (grid,j):
+    return np.array(grid[:,j])
+
+def get_square (grid,i,j):
+    if i < 3:
+        a1,a2 = 0,3 
+    elif i < 6:
+        a1,a2 = 3,6
+    else:
+        a1,a2 = 6,9
+        
+    if j < 3:
+        b1,b2 = 0,3 
+    elif j < 6:
+        b1,b2 = 3,6
+    else:
+        b1,b2 = 6,9
+    return grid[a1:a2,b1:b2]
+
+f1 = get_col (grid,0)
+print(f1)
+print()
+f2 = get_row (grid,0)
+print(f2)
+print()
+s1 = get_square (grid,9,9)
+print(s1)
+def not_used_numbers (mas):
+    return [c for c in "123456789" if c not in mas ]
+
+print(f1)
+rf1 = not_used_numbers (f1)
+print("Not used numbers")
+print(rf1)
+print()
+print(s1)
+rs1 = not_used_numbers (s1)
+print("Not used numbers")
+print(rs1)
+def numbers_that_can_be_used (grid, i, j):
+    n_col = not_used_numbers (get_col (grid,i)); n_row = not_used_numbers (get_row (grid,j)); n_square = not_used_numbers (get_square (grid,i,j))
+    numbers_that_can_be_used = np.intersect1d(n_square, n_col); numbers_that_can_be_used = np.intersect1d(numbers_that_can_be_used, n_row); numbers_that_can_be_used = np.setdiff1d(numbers_that_can_be_used,[".*0"])
+    return numbers_that_can_be_used
+display(grid)
+
+i = 1; j = 1
+print(f"numbers_that_can_be_used for {i},{j}, number {grid[i][j]} is {numbers_that_can_be_used (grid, i, j)}")  
+def f(i,j):return i*9+j
+def create_N(grid):
+    N = {}
+    for i in range (9):
+        for j in range (9):
+            if grid[i,j] not in ".*0": 
+                N[f(i,j)] = grid[i,j];
+            else: N[f(i,j)] = numbers_that_can_be_used (grid, i, j)
+            print(N[f(i,j)], end = " " )
+    print("\n\n")
+    return N
+
+N = create_N(grid)
+#NOT CORRECT
+def create_mas_with_solutions (grid, N):
+    mas = np.zeros((9,9))
+    mas = mas.astype(str)
+    for i in range (9):
+        for j in range (9):
+            mas[i][j] = str(N[f(i,j)][0])
+    return mas
+            
+mas = create_mas_with_solutions (grid,N)
+m = np.array([])
+for i in N.keys():
+    m = np.append(m,i)
+m = m.reshape(9,9)
+
+def find_indexes_for_element_of_N (a):
+    j,i = np.where(m == a) 
+    return j[0],i[0]
+
+print(find_indexes_for_element_of_N (2))
+#N_keys_with_indexes = group(N.keys(), 9)
+
+N1 = {}
+for i in N.keys():
+     if len(N[i])> 1: N1[i] = N[i]; print (N[i], end = " ")
+print("\n\nN1")
+N1
+
+def check_i_j_correct (mas,i,j):
+    str_col = np.unique(get_col (mas,i))
+    str_col1 =  1 if len(str_col)==9 else 0
+    
+    str_col = np.unique(get_row (mas,j))
+    str_col2 =  1 if len(str_col)==9 else 0
+    
+    str_col = np.unique(get_square (mas,i,j))
+    str_col3 =  1 if len(str_col)==9 else 0
+    
+    return str_col1 and str_col2 and str_col3
+
+def check_answer (grid): 
+    for i in range(9):
+        for j in range(9):
+            if check_i_j_correct (grid,i,j) == False: return False
+    return print(True);True
+
+def check_neighbor(grid,i,j,i1,j1):
+    if (len(np.unique(get_square (grid,i,j) == get_square (grid,i1,j1))) == 1) or i == i1 or j == j1: return True
+    else: return False
+
+print (check_neighbor(grid,0,0,2,2) )
+
+def f1 (i,j,k):return f(i,j)+k*9*9
+def create_G (N):
+    G = {}; M = {}
+    for i in range (9):
+        for j in range (9):
+            if f(i,j) in N:
+                for k in N[f(i,j)]:
+                    k = int(k)
+                    G[f1(i,j,k)] = {};
+                    for i1 in range (9):
+                        for j1 in range (9):
+                            if f(i1,j1) in N:
+                                for k1 in N[f(i1,j1)]:
+                                    k1 = int(k1)
+                                    if  check_neighbor(grid,i,j,i1,j1) and (f(i,j) != f(i1,j1)) and (k != k1) and (str(k1) in N[f(i1,j1)]):# and (f1(i1,j1,k1) not in G[f1(i,j,k)]): 
+                                        G[f1(i,j,k)][f1(i1,j1,k1)] = [i,j,k,i1,j1,k1];M[f(i,j)] = {}; M[f(i,j)][f(i1,j1)] = [i,j,i1,j1]
+                                        if f1(i1,j1,k1) not in G: G[f1(i1,j1,k1)] = {}; 
+                                        if f1(i,j,k) not in G[f1(i1,j1,k1)]:G[f1(i1,j1,k1)][f1(i,j,k)] = [i1,j1,k1,i,j,k]
+                                        if f(i1,j1) not in M: M[f(i1,j1)] = {}
+                                        if f(i,j) not in M[f(i1,j1)]: M[f(i1,j1)][f(i,j)] = [i1,j1,i,j]
+                                        
+    return G, M
+G, M = create_G (N)
+G1, M1 = create_G (N1)
+def del_for_N_i_j_k(N,i,j):
+    for i1 in range (9):
+        for j1 in range (9):
+            if check_neighbor(grid,i,j,i1,j1) and (f(i,j) != f(i1,j1)) and len(N[f(i1,j1)]) > 1:
+                if np.size(np.where(N[f(i1,j1)]==N[f(i,j)])[0]) != 0: 
+                    N[f(i1,j1)] = np.delete(N[f(i1,j1)],np.where(N[f(i1,j1)]==N[f(i,j)])[0][0])
+    return N
+def different(N1,N2):
+    if len(N1) == len(N2):
+        for i in range(len(N1)):
+            if N1[i] != N1[i]: return True
+    else: return True
+    return False
+
+def check_diff(N_sup,N_c):
+    for l in range(len(N_sup)):
+        print("CHECK N_sup[l]",N_sup)
+        for i in N_sup[l]:
+#             if len(N_sup[l][i])>1:
+                #print("N_sup[l][i], N_c[i] = ",N_sup[l][i] == N_c[i])
+                if different(N_sup[l][i], N_c[i]): return True
+    return False
+def check_lenght_dictionary(N1,N2):
+    for i,j in zip(N1.keys(),N2.keys()):
+        if len(N1[i]) != len(N2[j]): return True
+    return False
+def delete_1_element_masive (N):
+    for i in range (9):
+        for j in range (9):
+            if len(N[f(i,j)]) == 1  and isinstance(N[f(i,j)],np.ndarray):
+                N[f(i,j)] = N[f(i,j)][0]
+                N = del_for_N_i_j_k(N,i,j)
+    return N
+
+def write_in_grid (N):
+    for i in N.keys():
+        if len(N[i])>1:return 0
+    grid = np.zeros((9,9),str)
+    for i in range (9):
+        for j in range (9):
+            grid[i][j] = N[f(i,j)]
+    return grid
+display(grid)
+
+
+def try_to_find_solution_1(N):
+    N_check = delete_1_element_masive (N.copy())
+    while check_lenght_dictionary(N,N_check):
+        N = N_check.copy()
+        N_check = delete_1_element_masive (N_check.copy())   
+      #  print(N_check)
+#         for key, val in N_check.items():
+#             print('{}:{}\n'.format(key, val))
+      #  print()
+    return N_check
+
+def try_different_labels_for_object_with_minimum_size(N,sup_grid):
+    l = 9
+    for i in N.keys():
+        if len(N[i])<l and isinstance(N[i],np.ndarray): l = len(N[i])
+    print("l min", l)
+    for i in range (9):
+        for j in range (9):
+            if len(N[f(i,j)]) == l and isinstance(N[f(i,j)],np.ndarray):
+                for k in range (l):
+#     sup_grid = np.array([])
+#     N_sup = np.array([])
+#                     print(len(N[f(i,j)]))
+#                     print("k = ",k)
+                    N_c = N.copy()
+#                     print("MISTAKE",N_c,f(i,j),i,j)
+#                     print(f(i,j),N_c[f(i,j)][k] )
+                    N_c[f(i,j)] = N_c[f(i,j)][k]
+                    N_c = del_for_N_i_j_k(N_c,i,j)
+                #                     if len(N_sup) == 0:N_sup = np.append(N_sup,N_c)
+                #                     if check_diff(N_sup,N_c) and len(N_sup) > 0: N_sup = np.append(N_sup,N_c)
+                    N_c = try_to_find_solution_1(N_c)
+                    build_grid = True 
+                    for r in N_c.keys():
+                        if len(N_c[r]) > 1 and isinstance(N_c[r],np.ndarray): 
+                            try_different_labels_for_object_with_minimum_size(N_c, sup_grid); 
+                            build_grid = False; break
+                    if build_grid: 
+                        grid_test = write_in_grid (N_c)
+                        if check_answer (grid_test):
+                            if len(sup_grid) == 0: sup_grid = np.append(sup_grid,grid_test); print ("ADD"); display(grid)
+                            if check_diff(sup_grid,grid_test) and len(N_sup) > 0: sup_grid = np.append(sup_grid,grid_test); print ("ADD")
+
+
+sup_grid =[]
+try_different_labels_for_object_with_minimum_size(N,sup_grid)
+
+
+                    
+    
+                    
+#     for N_c in N_sup: 
+#         N_r = try_to_find_solution_1(N)
+#         grid = write_in_grid (N_r,sup_grid)
+#         if len(sup_grid) == 0: sup_grid = np.append(sup_grid,grid); print ("ADD")
+#         if check_diff(sup_grid,grid) and len(N_sup) > 0: sup_grid = np.append(sup_grid,grid); print ("ADD")
+#     return sup_grid
+                        
+                    
+                    
+                
+# try_different_labels_for_object_with_minimum_size(N)   
+
+try_different_labels_for_object_with_minimum_size(N,sup_grid)
+
+def deletion_algorithm (N1,M1,G1):
+
+#     for m1 in M1.keys():
+#         for m2 in M1[m1].keys():
+#             i = M1[m1][m2][0]; j = M1[m1][m2][1]; i1 = M1[m1][m2][2]; j1 = M1[m1][m2][3];
+#             c = 0;
+#             if f(i,j) in N1:
+#                 for k in N1[f(i,j)]:
+#                     k = int(k)
+#                     break_out_flag = False
+#                     if f(i1,j1) in N1:
+#                         for k1 in N1[f(i1,j1)]:
+#                             k1 = int(k1)
+#                             if f1(i1,j1,k1) in G1[f1(i,j,k)]: c+=1; break_out_flag = True; break
+#                     if break_out_flag:break
+#                 #print(c, end = " ")
+# #             print(f"{c} < {len(M1[m1].keys())}", end = " ")
+# #             if c >= len(M1[m1].keys()): print("!!!")
+#             if c != len(M1[m1].keys()):
+#                 a = N1[f(i,j)]
+#                 print(a,f(i,j))
+#                 a = np.delete(a,np.where(a==str(k))[0][0])
+#                 #N1[f(i,j)] = a
+# #                     for z in N1[f(i,j)]:
+# #                         z = int(z) 
+# #                         del G1[f1(i,j,z)];
+# #                     del N1[f(i,j)][k]
+                        
+                    
+#                     #np.delete(N1[f(i,j)],str(k))
+#             print(f"{c} , {len(M1[m1].keys())}")
+
+    for m1 in M1.keys():
+        c = 0
+        for m2 in M1[m1].keys():
+            i = M1[m1][m2][0]; j = M1[m1][m2][1]; i1 = M1[m1][m2][2]; j1 = M1[m1][m2][3];
+            if m1 in N1:
+                for k in N1[m1]:
+                    k = int(k)
+                    break_out_flag = False
+                    if f(i1,j1) in N1:
+                        for k1 in N1[f(i1,j1)]:
+                            k1 = int(k1)
+                            if f1(i1,j1,k1) in G1[f1(i,j,k)]: c+=1; break_out_flag = True; break
+                    if break_out_flag:break
+        if c != len(M1[m1].keys()): print(f"F c={c} len(M1[m1].keys()={len(M1[m1].keys())} {N[f(i,j)]} {M1[m1]}")            
+
+    
+#     for m1 in M1.keys():
+#         for m2 in M1[m1].keys():
+#             i = M1[m1][m2][0]; j = M1[m1][m2][1]; i1 = M1[m1][m2][2]; j1 = M1[m1][m2][3];
+#             if f(i,j) in N1:
+#                 for k in N1[f(i,j)]:
+#                     k = int(k)
+#                     if f(i1,j1) in N1:
+#                         for k1 in N1[f(i1,j1)]:
+#                             k1 = int(k1)
+#                             if (f1(i1,j1,k1) not in G1)  or (f1(i,j,k) not in G1) or (f1(i1,j1,k1) not in G1[f1(i,j,k)]) or (f1(i,j,k) not in G[f1(i1,j1,k1)]):
+#                                 if f1(i,j,k) in G1: del G1[f1(i,j,k)]
+#                                 if f1(i1,j1,k1) in G1: del G1[f1(i1,j1,k1)]
+                                #print("2", end = " ")
+    return N1
+
+N_we_got = deletion_algorithm (N,M,G) 
+
+
+|||||||||||||||||||||||||||||||||||
+def deletion_algorithm (N1,M1,G1):
+
+#     for m1 in M1.keys():
+#         for m2 in M1[m1].keys():
+#             i = M1[m1][m2][0]; j = M1[m1][m2][1]; i1 = M1[m1][m2][2]; j1 = M1[m1][m2][3];
+#             c = 0;
+#             if f(i,j) in N1:
+#                 for k in N1[f(i,j)]:
+#                     k = int(k)
+#                     break_out_flag = False
+#                     if f(i1,j1) in N1:
+#                         for k1 in N1[f(i1,j1)]:
+#                             k1 = int(k1)
+#                             if f1(i1,j1,k1) in G1[f1(i,j,k)]: c+=1; break_out_flag = True; break
+#                     if break_out_flag:break
+#                 #print(c, end = " ")
+# #             print(f"{c} < {len(M1[m1].keys())}", end = " ")
+# #             if c >= len(M1[m1].keys()): print("!!!")
+#             if c != len(M1[m1].keys()):
+#                 a = N1[f(i,j)]
+#                 print(a,f(i,j))
+#                 a = np.delete(a,np.where(a==str(k))[0][0])
+#                 #N1[f(i,j)] = a
+# #                     for z in N1[f(i,j)]:
+# #                         z = int(z) 
+# #                         del G1[f1(i,j,z)];
+# #                     del N1[f(i,j)][k]
+                        
+                    
+#                     #np.delete(N1[f(i,j)],str(k))
+#             print(f"{c} , {len(M1[m1].keys())}")
+
+    for m1 in M1.keys():
+        c = 0
+        for m2 in M1[m1].keys():
+            i = M1[m1][m2][0]; j = M1[m1][m2][1]; i1 = M1[m1][m2][2]; j1 = M1[m1][m2][3];
+            if m1 in N1:
+                for k in N1[m1]:
+                    k = int(k)
+                    break_out_flag = False
+                    if f(i1,j1) in N1:
+                        for k1 in N1[f(i1,j1)]:
+                            k1 = int(k1)
+                            if f1(i1,j1,k1) in G1[f1(i,j,k)]: c+=1; break_out_flag = True; break
+                    if break_out_flag:break
+        if c != len(M1[m1].keys()): print(f"F c={c} len(M1[m1].keys()={len(M1[m1].keys())} {N[f(i,j)]} {M1[m1]}")            
+
+    
+#     for m1 in M1.keys():
+#         for m2 in M1[m1].keys():
+#             i = M1[m1][m2][0]; j = M1[m1][m2][1]; i1 = M1[m1][m2][2]; j1 = M1[m1][m2][3];
+#             if f(i,j) in N1:
+#                 for k in N1[f(i,j)]:
+#                     k = int(k)
+#                     if f(i1,j1) in N1:
+#                         for k1 in N1[f(i1,j1)]:
+#                             k1 = int(k1)
+#                             if (f1(i1,j1,k1) not in G1)  or (f1(i,j,k) not in G1) or (f1(i1,j1,k1) not in G1[f1(i,j,k)]) or (f1(i,j,k) not in G[f1(i1,j1,k1)]):
+#                                 if f1(i,j,k) in G1: del G1[f1(i,j,k)]
+#                                 if f1(i1,j1,k1) in G1: del G1[f1(i1,j1,k1)]
+                                #print("2", end = " ")
+    return N1
+
+N_we_got = deletion_algorithm (N,M,G) 
+          
